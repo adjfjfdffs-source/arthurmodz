@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#100b18">
+<title>Arthur IA</title>
+<style>
+:root{color-scheme:dark;--bg:#0d0a12;--panel:#17111f;--panel2:#21162e;--purple:#9b5cff;--text:#f7f1ff;--muted:#b9a9cb;--border:#352542}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#241137 0,#0d0a12 48%);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100dvh}
+.app{max-width:900px;margin:auto;min-height:100dvh;display:flex;flex-direction:column;padding:14px}
+header{display:flex;align-items:center;gap:12px;padding:10px 4px 16px;border-bottom:1px solid var(--border)}
+.logo{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,#b36aff,#5720b8);box-shadow:0 0 28px #8b3dff44;font-size:24px;font-weight:800}
+.brand{flex:1}.brand h1{font-size:20px;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.status{font-size:11px;border:1px solid #49305f;background:#21152e;padding:7px 10px;border-radius:99px;color:#d9c3ff}
+.welcome{padding:28px 4px 12px}.welcome h2{font-size:clamp(24px,5vw,34px);margin:0 0 8px;letter-spacing:-.8px}.welcome h2 span{color:#c49aff}.welcome p{margin:0;color:var(--muted);line-height:1.5}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:17px}.chip{border:1px solid var(--border);background:#191020;color:#e6d7f7;padding:10px 12px;border-radius:13px;font-size:12px;cursor:pointer}
+#chat{display:flex;flex-direction:column;gap:14px;padding:16px 0 20px;flex:1}
+.msg{max-width:100%;border:1px solid var(--border);border-radius:17px;padding:13px 14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;max-width:88%;background:linear-gradient(135deg,#482078,#2c1742);border-color:#6b3a95}
+.msg.ai{align-self:stretch;background:rgba(24,17,31,.92)}.msg .who{font-size:11px;color:#c6a1ff;font-weight:700;margin-bottom:7px;letter-spacing:.3px}
+.msg img{display:block;max-width:min(100%,320px);max-height:260px;object-fit:contain;border-radius:10px;margin-top:8px;border:1px solid var(--border)}
+.bottom{position:sticky;bottom:0;padding:12px 0 max(10px,env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,#0d0a12 14%)}
+.preview{display:none;align-items:center;gap:10px;margin:0 0 8px;background:#1b1325;border:1px solid var(--border);padding:8px;border-radius:12px}.preview img{width:54px;height:54px;object-fit:cover;border-radius:8px}.preview span{flex:1;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.composer{border:1px solid #51346a;background:#17111f;border-radius:20px;padding:9px;box-shadow:0 8px 32px #0005}
+textarea{display:block;width:100%;resize:vertical;min-height:54px;max-height:180px;background:transparent;border:0;outline:0;color:var(--text);font:inherit;padding:8px}
+.tools{display:flex;align-items:center;gap:8px;padding:4px}.tool{border:1px solid var(--border);background:#21172d;color:#e7d8f8;border-radius:12px;min-width:42px;height:42px;display:grid;place-items:center;font-size:19px;cursor:pointer}.send{margin-left:auto;border:0;background:linear-gradient(135deg,#b06aff,#6d28d9);color:white;border-radius:13px;padding:0 18px;height:42px;font-weight:750;cursor:pointer}.send:disabled{opacity:.5;cursor:wait}
+.hint{text-align:center;font-size:11px;color:#8f7e9f;margin:8px 0 0}.typing{color:#c49aff;font-size:13px;padding:8px}
+@media(min-width:700px){.app{padding:20px}.welcome{padding-top:36px}.msg{padding:16px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="logo">A</div><div class="brand"><h1>Arthur IA</h1><p>Tua assistente de código e design</p></div><div class="status">● ONLINE</div></header>
+<section class="welcome" id="welcome"><h2>O que vamos <span>criar hoje?</span></h2><p>Me manda tua ideia ou uma imagem de referência. Posso ajudar com HTML, CSS, JavaScript, Java e interfaces Android.</p>
+<div class="chips">
+<button class="chip" data-prompt="Cria uma página HTML moderna, preta e roxa, com cartões e botões bonitos. Envia o código completo.">✦ Criar um site</button>
+<button class="chip" data-prompt="Ajuda-me a analisar esta imagem de referência e a criar um design parecido. Explica os elementos e gera o código completo.">▧ Analisar imagem</button>
+<button class="chip" data-prompt="Cria um exemplo completo de HTML e CSS para uma interface futurista, responsiva e bem organizada.">⌘ Gerar código</button>
+</div></section>
+<main id="chat" aria-live="polite"></main>
+<div class="bottom">
+<div class="preview" id="preview"><img id="previewImg" alt="Prévia da imagem"><span id="previewName"></span><button class="tool" id="removeImage" title="Remover imagem" aria-label="Remover imagem">×</button></div>
+<div class="composer"><textarea id="prompt" placeholder="Escreve o que tu queres criar..." rows="2"></textarea>
+<div class="tools"><button class="tool" id="pickImage" title="Enviar imagem" aria-label="Enviar imagem">＋</button><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden><button class="tool" id="clearChat" title="Nova conversa" aria-label="Nova conversa">↺</button><button class="send" id="send">Enviar ↑</button></div></div>
+<p class="hint">Confere os códigos antes de usar. Não coloques senhas ou dados pessoais no chat.</p>
+</div>
+</div>
+<script>
+const chat=document.getElementById('chat'), promptBox=document.getElementById('prompt'), sendBtn=document.getElementById('send');
+const imageInput=document.getElementById('imageInput'), preview=document.getElementById('preview'), previewImg=document.getElementById('previewImg'), previewName=document.getElementById('previewName');
+let chosenImage=null, history=[];
+function addMessage(role,text,imageUrl=null){
+ const el=document.createElement('div');el.className='msg '+(role==='user'?'user':'ai');
+ const who=document.createElement('div');who.className='who';who.textContent=role==='user'?'TU':'ARTHUR IA';el.appendChild(who);
+ const body=document.createElement('div');body.textContent=text;el.appendChild(body);
+ if(imageUrl){const im=document.createElement('img');im.src=imageUrl;im.alt='Imagem enviada';el.appendChild(im)}
+ chat.appendChild(el);el.scrollIntoView({behavior:'smooth',block:'end'});return el;
+}
+function fileToData(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=reject;r.readAsDataURL(file)})}
+document.getElementById('pickImage').onclick=()=>imageInput.click();
+imageInput.onchange=()=>{const f=imageInput.files?.[0];if(!f)return;if(f.size>4*1024*1024){alert('Escolhe uma imagem com até 4 MB.');imageInput.value='';return}chosenImage=f;previewImg.src=URL.createObjectURL(f);previewName.textContent=f.name;preview.style.display='flex'};
+document.getElementById('removeImage').onclick=()=>{chosenImage=null;imageInput.value='';preview.style.display='none';previewImg.removeAttribute('src')};
+document.getElementById('clearChat').onclick=()=>{chat.replaceChildren();history=[];document.getElementById('welcome').style.display='block'};
+document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>{promptBox.value=b.dataset.prompt;promptBox.focus()});
+async function send(){
+ const text=promptBox.value.trim();if(!text&&!chosenImage)return;
+ const imageFile=chosenImage;let imageData=null;
+ if(imageFile){try{imageData=await fileToData(imageFile)}catch(e){alert('Não consegui ler a imagem. Tenta outra.');return}}
+ const imageUrl=imageFile?URL.createObjectURL(imageFile):null;
+ addMessage('user',text||'Analisa esta imagem, por favor.',imageUrl);
+ document.getElementById('welcome').style.display='none';
+ const userContent={role:'user',text:text||'Analisa esta imagem, por favor.'};
+ if(imageData)userContent.image={mimeType:imageFile.type,data:imageData};
+ history.push(userContent);if(history.length>12)history=history.slice(-12);
+ promptBox.value='';chosenImage=null;imageInput.value='';preview.style.display='none';sendBtn.disabled=true;sendBtn.textContent='A pensar…';
+ const typing=document.createElement('div');typing.className='typing';typing.textContent='Arthur IA está a preparar a resposta…';chat.appendChild(typing);
+ try{
+  const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history})});
+  const data=await res.json();if(!res.ok)throw new Error(data.error||'Não consegui responder agora.');
+  typing.remove();addMessage('ai',data.reply||'Não veio nenhuma resposta. Tenta novamente.');
+  history.push({role:'model',text:data.reply||''});if(history.length>12)history=history.slice(-12);
+ }catch(e){typing.remove();addMessage('ai','Ops! '+(e.message||'Falha na ligação.')+' Verifica a configuração da API e tenta de novo.');history.pop()}
+ finally{sendBtn.disabled=false;sendBtn.textContent='Enviar ↑';promptBox.focus()}
+}
+sendBtn.onclick=send;
+promptBox.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+</script>
+</body>
+</html>
